@@ -2,7 +2,7 @@
     "name": "webgl2-demos",
     "version": "1.0.0",
     "main": "index.js",
-    "repository": "",
+    "repository": "https://github.com/pengfeiw/webgl2-demos.git",
     "author": "wangpengfei <2601339907@qq.com>",
     "license": "MIT",
     "scripts": {
