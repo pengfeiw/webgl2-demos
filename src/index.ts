@@ -1,4 +1,4 @@
-import draw from "./demos/theroyOfLight/phongLighting";
+import draw from "./demos/theroyOfLight/material";
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2");

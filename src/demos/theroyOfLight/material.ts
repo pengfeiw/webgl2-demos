@@ -1,6 +1,5 @@
 /**
  * 冯氏光照模型
- * 文章链接：http://pengfeixc.com/blog/60ebe68be97367196dce3f09
  */
 import {glMatrix, mat4} from "gl-matrix";
 import {vertices, normals} from "../../data/cube";
@@ -10,23 +9,23 @@ import {resizeCanvas} from "../../util/utilFun";
 
 const vertex_source =
     `#version 300 es
-
-    in vec3  a_pos;
-    in vec3 a_normal;
-
-    out vec3 v_normal;
-    out vec3 v_pos;
-
-    uniform mat4 projection;
-    uniform mat4 view;
-    uniform mat4 model;
-
-    void main() {
-        gl_Position = projection * view * model * vec4(a_pos, 1.0);
-        v_normal = a_normal;
-        v_pos = (model * vec4(a_pos, 1.0)).xyz;
-    }
-`;
+ 
+     in vec3  a_pos;
+     in vec3 a_normal;
+ 
+     out vec3 v_normal;
+     out vec3 v_pos;
+ 
+     uniform mat4 projection;
+     uniform mat4 view;
+     uniform mat4 model;
+ 
+     void main() {
+         gl_Position = projection * view * model * vec4(a_pos, 1.0);
+         v_normal = a_normal;
+         v_pos = (model * vec4(a_pos, 1.0)).xyz;
+     }
+ `;
 
 const fragment_source =
     `#version 300 es
@@ -37,31 +36,43 @@ const fragment_source =
 
     out vec4 FragColor;
 
-    uniform vec3 u_objColor; // 物体颜色
-    uniform vec3 u_lightColor; // 光照颜色
-    uniform vec3 u_lightDirection; // 光照方向
+    // uniform vec3 u_lightDirection; // 光照方向
     uniform vec3 viewPos; // 摄像机位置
 
-    float ambientStrength = 0.1; // 环境光因子
-    float specularStrength = 0.5; // 镜面光照因子
+    struct Material {
+        vec3 ambient;
+        vec3 diffuse;
+        vec3 specular;
+        float shininess;
+    };
+
+    struct Light {
+        vec3 direction;
+        vec3 ambient;
+        vec3 diffuse;
+        vec3 specular;
+    };
+    
+    uniform Material material;
+    uniform Light light;
 
     void main() {
         // 环境光照
-        vec3 ambient = ambientStrength * u_lightColor;
+        vec3 ambient = material.ambient * light.ambient;
         
         // 漫反射
-        vec3 lightDirectionReverse = normalize(-u_lightDirection);
+        vec3 lightDirectionReverse = normalize(-light.direction);
         vec3 normal = normalize(v_normal);
         float diffuseStrength = max(dot(normal, lightDirectionReverse), 0.0);
-        vec3 diffuse = diffuseStrength * u_lightColor;
+        vec3 diffuse = light.diffuse * (diffuseStrength * material.diffuse);
 
         // 镜面光照
         vec3 viewDir = normalize(viewPos - v_pos);
-        vec3 reflectDir = reflect(u_lightDirection, normal);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 30.0); // 30是高光的反光度
-        vec3 specular = specularStrength * spec * u_lightColor;
+        vec3 reflectDir = reflect(light.direction, normal);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+        vec3 specular = light.specular * (spec * material.specular);
 
-        vec3 result = u_objColor * (ambient + diffuse + specular);
+        vec3 result = ambient + diffuse + specular;
         FragColor = vec4(result, 1.0);
     }
 `;
@@ -93,9 +104,15 @@ const draw = (gl: WebGL2RenderingContext) => {
     const model = mat4.create();
     shader.setMat4("model", model);
 
-    shader.setFloat3("u_objColor", 0.36, 0.42, 0.60);
-    shader.setFloat3("u_lightColor", 1.0, 1.0, 1.0);
-    shader.setFloat3("u_lightDirection", 1.0, -0.5, -1.0);
+    shader.setFloat3("material.ambient", 1, 0.5, 0.31);
+    shader.setFloat3("material.diffuse", 1, 0.5, 0.31);
+    shader.setFloat3("material.specular", 0.5, 0.5, 0.5);
+    shader.setFloat("material.shininess", 32);
+
+    shader.setFloat3("light.ambient",  0.2, 0.2, 0.2);
+    shader.setFloat3("light.diffuse",  0.5, 0.5, 0.5); // 将光照调暗了一些以搭配场景
+    shader.setFloat3("light.specular", 1.0, 1.0, 1.0); 
+    shader.setFloat3("light.direction", 1.0, -0.5, -1.0);
 
     const camera = new Camera([0, 1, 4]);
     camera.mouseSensitivity = 0.02;
